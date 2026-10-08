@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCE082" />
+      <stop offset="40%" stop-color="#D4AF37" />
+      <stop offset="70%" stop-color="#AA8214" />
+      <stop offset="100%" stop-color="#F2D06B" />
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F244C" />
+      <stop offset="50%" stop-color="#0A1835" />
+      <stop offset="100%" stop-color="#050C1C" />
+    </linearGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Outer Navy Circle with Gold Trim -->
+  <circle cx="250" cy="250" r="235" fill="url(#navyGrad)" stroke="url(#goldGrad)" stroke-width="8" />
+  <circle cx="250" cy="250" r="220" fill="none" stroke="url(#goldGrad)" stroke-width="2" stroke-dasharray="6,4" />
+
+  <!-- Circular Text Path for JEHOVAH JIREH ALBY FOUNDATION -->
+  <path id="textPathTop" d="M 65,250 A 185,185 0 1,1 435,250" fill="none" />
+  <path id="textPathBottom" d="M 435,250 A 185,185 0 0,1 65,250" fill="none" />
+
+  <!-- Top Text -->
+  <text font-family="'Cinzel', 'Playfair Display', 'Times New Roman', serif" font-size="23" font-weight="700" fill="url(#goldGrad)" letter-spacing="3.5">
+    <textPath href="#textPathTop" startOffset="50%" text-anchor="middle">
+      JEHOVAH JIREH ALBY FOUNDATION
+    </textPath>
+  </text>
+
+  <!-- Bottom Text: Motto & Scripture -->
+  <text font-family="'Cinzel', 'Playfair Display', 'Times New Roman', serif" font-size="19" font-weight="600" fill="url(#goldGrad)" letter-spacing="2.5">
+    <textPath href="#textPathBottom" startOffset="50%" text-anchor="middle">
+      • THE LORD WILL PROVIDE • GEN. 22:14 •
+    </textPath>
+  </text>
+
+  <!-- Inner Crest Ring -->
+  <circle cx="250" cy="250" r="148" fill="#0B1A38" stroke="url(#goldGrad)" stroke-width="3" />
+
+  <!-- Radiance Rays behind Cross -->
+  <g stroke="url(#goldGrad)" stroke-width="1.5" opacity="0.45">
+    <line x1="250" y1="125" x2="250" y2="140" />
+    <line x1="250" y1="360" x2="250" y2="375" />
+    <line x1="125" y1="250" x2="140" y2="250" />
+    <line x1="360" y1="250" x2="375" y2="250" />
+    <line x1="162" y1="162" x2="173" y2="173" />
+    <line x1="338" y1="162" x2="327" y2="173" />
+    <line x1="162" y1="338" x2="173" y2="327" />
+    <line x1="338" y1="338" x2="327" y2="327" />
+  </g>
+
+  <!-- Golden Caring Hands Embracing Base -->
+  <path d="M 170,290 C 170,250 200,270 230,285 C 240,290 250,295 250,305 C 250,295 260,290 270,285 C 300,270 330,250 330,290 C 330,325 295,350 250,358 C 205,350 170,325 170,290 Z" fill="none" stroke="url(#goldGrad)" stroke-width="3.5" />
+
+  <!-- Sacred Latin Cross of Faith -->
+  <g fill="url(#goldGrad)" filter="url(#softGlow)">
+    <!-- Vertical Cross Beam -->
+    <path d="M 244,145 L 256,145 L 255,270 L 245,270 Z" />
+    <!-- Horizontal Cross Beam -->
+    <path d="M 226,178 L 274,178 L 274,188 L 226,188 Z" />
+    <!-- Decorative Cross finials -->
+    <polygon points="250,140 242,145 258,145" />
+    <polygon points="222,183 226,177 226,189" />
+    <polygon points="278,183 274,177 274,189" />
+  </g>
+
+  <!-- Dove of Hope / Peace hovering -->
+  <path d="M 250,205 C 242,198 232,196 222,201 C 233,205 240,211 250,216 C 260,211 267,205 278,201 C 268,196 258,198 250,205 Z" fill="url(#goldGrad)" />
+  <circle cx="250" cy="202" r="3" fill="url(#goldGrad)" />
+
+  <!-- Flourish Stars Left & Right -->
+  <polygon points="120,250 123,243 130,246 125,252 128,259 121,255 114,258 116,251 110,246 117,243" fill="url(#goldGrad)" />
+  <polygon points="380,250 383,243 390,246 385,252 388,259 381,255 374,258 376,251 370,246 377,243" fill="url(#goldGrad)" />
+</svg>
