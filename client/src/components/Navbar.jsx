@@ -25,7 +25,7 @@ export default function Navbar() {
       <div className="top-notice-bar">
         <div className="top-notice-content">
           <div className="top-notice-motto">
-            <span>"{settings?.motto || 'the lord will provide'}"</span>
+            <span>"{settings?.motto || 'The Lord will provide'}"</span>
             <span className="scripture-tag">{settings?.scripture || 'Genesis 22:14'}</span>
           </div>
           <div className="top-notice-contact">
@@ -74,7 +74,9 @@ export default function Navbar() {
             <button
               className="mobile-menu-btn"
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Toggle navigation menu"
+              aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-nav-panel"
             >
               {mobileOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
@@ -87,8 +89,9 @@ export default function Navbar() {
         className={`mobile-nav-drawer${mobileOpen ? ' open' : ''}`}
         onClick={closeMobile}
         aria-hidden={!mobileOpen}
+        inert={!mobileOpen ? true : undefined}
       >
-        <div className="mobile-nav-panel" onClick={e => e.stopPropagation()}>
+        <div className="mobile-nav-panel" id="mobile-nav-panel" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Mobile navigation">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <Logo size="sm" />
             <button className="mobile-nav-close" onClick={closeMobile} aria-label="Close menu">

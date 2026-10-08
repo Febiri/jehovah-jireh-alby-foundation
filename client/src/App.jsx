@@ -15,6 +15,8 @@ import Projects from './pages/Projects';
 import Gallery from './pages/Gallery';
 import Donate from './pages/Donate';
 import Contact from './pages/Contact';
+import { Privacy, Terms, Safeguarding, Transparency, NotFound } from './pages/Legal';
+import ScrollToTop from './components/ScrollToTop';
 
 // Admin Pages
 import AdminLogin from './pages/admin/AdminLogin';
@@ -44,6 +46,7 @@ export default function App() {
     <AuthProvider>
       <ContentProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             {/* Public Website Routes */}
             <Route element={<PublicLayout />}>
@@ -54,6 +57,10 @@ export default function App() {
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/donate" element={<Donate />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/safeguarding" element={<Safeguarding />} />
+              <Route path="/transparency" element={<Transparency />} />
             </Route>
 
             {/* Admin Login */}
@@ -71,7 +78,7 @@ export default function App() {
             </Route>
 
             {/* Fallback */}
-            <Route path="*" element={<Home />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </ContentProvider>

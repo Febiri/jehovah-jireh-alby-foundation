@@ -15,7 +15,7 @@ function getWhatIcon(iconName) {
 }
 
 export default function Home() {
-  const { settings, whatWeDo } = useContent();
+  const { settings, whatWeDo, loading } = useContent();
 
   // Only show first 3 programs on home page
   const featuredPrograms = whatWeDo.slice(0, 3);
@@ -42,7 +42,7 @@ export default function Home() {
 
               <div className="hero-motto-box">
                 <div className="hero-motto-text">
-                  "{settings?.motto || 'the lord will provide'}"
+                  "{settings?.motto || 'The Lord will provide'}"
                 </div>
                 <div className="hero-scripture">
                   Holy Scripture — {settings?.scripture || 'Genesis 22:14'}
@@ -127,7 +127,10 @@ export default function Home() {
           </div>
 
           <div className="home-programs-grid">
-            {featuredPrograms.map((item) => (
+            {loading ? (
+              [1, 2, 3].map(i => <div key={i} className="skeleton-card" aria-hidden="true" />)
+            ) : (
+              featuredPrograms.map((item) => (
               <div key={item.id} className="home-program-card">
                 <div className="home-program-icon">
                   {getWhatIcon(item.icon)}
@@ -135,7 +138,8 @@ export default function Home() {
                 <h3 className="home-program-title">{item.title}</h3>
                 <p className="home-program-desc">{item.description}</p>
               </div>
-            ))}
+              ))
+            )}
           </div>
 
           <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>

@@ -1,5 +1,7 @@
 // End-to-end automated test suite for Jehovah Jireh Alby Foundation
-const BASE_URL = 'http://localhost:5000';
+// Credentials are read from the environment (.env) — never hardcode real passwords here.
+try { require('dotenv').config({ path: require('path').join(__dirname, '.env') }); } catch (e) { /* dotenv optional */ }
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
 
 async function runTests() {
   console.log('====================================================');
@@ -27,18 +29,18 @@ async function runTests() {
     const s = settingsRes.data;
 
     assert(
-      s.description.includes('committed to caring for orphans, street children,vulnerable children and the needy'),
-      'Official description matches exact supplied wording'
+      s.description.includes('caring for orphans, street children, vulnerable children and the needy'),
+      'Official description matches corrected wording'
     );
     assert(
-      s.mission === 'to provide food, shelter, education, medical support and spiritual guidance to orphaned and less privileged children in Ghana.',
-      'Official mission matches exact supplied wording'
+      s.mission === 'To provide food, shelter, education, medical support and spiritual guidance to orphaned and less privileged children in Ghana.',
+      'Official mission matches corrected wording'
     );
     assert(
       s.vision === 'To see every vulnerable child smile, thrive, and know that God provides.',
       'Official vision matches exact supplied wording'
     );
-    assert(s.motto === 'the lord will provide', 'Official motto matches exact supplied wording');
+    assert(s.motto === 'The Lord will provide', 'Official motto matches corrected wording');
     assert(s.scripture === 'Genesis 22:14', 'Scripture reference is Genesis 22:14');
     assert(s.phone === '0248072279', 'Official phone is 0248072279');
     assert(s.email === 'Jehovahjirehalbyfoundation@gmail.com', 'Official email matches exactly');
@@ -89,6 +91,7 @@ async function runTests() {
     }).then(r => r.json());
     assert(donateRes.success === true, 'Donation successfully submitted');
     assert(donateRes.data.transaction_ref.startsWith('JJAF-'), 'Unique transaction reference generated');
+    assert(donateRes.data.payment_status === 'Pending', 'Pledge stored as Pending until admin confirms (no fake Completed)');
     const donationRef = donateRes.data.transaction_ref;
 
     // 5. Test Public Contact Message Submission
@@ -130,7 +133,7 @@ async function runTests() {
     const goodLogin = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@jjafoundation.org', password: 'Admin2026Secure!' })
+      body: JSON.stringify({ email: process.env.ADMIN_EMAIL || 'admin@jjafoundation.org', password: process.env.ADMIN_PASSWORD || 'jjaf2024!' })
     }).then(r => r.json());
     assert(goodLogin.success === true && !!goodLogin.token, 'Admin login succeeds with valid JWT token');
     const adminToken = goodLogin.token;

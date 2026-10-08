@@ -20,6 +20,7 @@ export default function AdminDonations() {
     if (statusFilter) params.append('status', statusFilter);
     if (currencyFilter) params.append('currency', currencyFilter);
     if (methodFilter) params.append('method', methodFilter);
+    params.append('limit', '100');
 
     fetch(`/api/donations?${params.toString()}`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -27,11 +28,26 @@ export default function AdminDonations() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          setDonations(data.data);
+          setDonations(Array.isArray(data.data) ? data.data : []);
         }
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
+  };
+
+  const setStatus = async (id, status) => {
+    if (!window.confirm(`Mark donation #${id} as ${status}?`)) return;
+    try {
+      const res = await fetch(`/api/donations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status })
+      }).then(r => r.json());
+      if (res.success) fetchDonations();
+      else alert(res.error || 'Failed to update donation.');
+    } catch (e) {
+      alert('Network error updating donation.');
+    }
   };
 
   useEffect(() => {
@@ -91,9 +107,9 @@ export default function AdminDonations() {
           onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="">All Statuses</option>
-          <option value="Completed">Completed</option>
-          <option value="Verified">Verified</option>
-          <option value="Pending">Pending</option>
+          <option value="Pending">Pending (awaiting receipt)</option>
+          <option value="Completed">Completed (verified)</option>
+          <option value="Failed">Failed</option>
         </select>
 
         <select
@@ -133,16 +149,17 @@ export default function AdminDonations() {
                 <th>Frequency</th>
                 <th>Status</th>
                 <th>Date</th>
+                <th>Verify</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>Loading donations...</td>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '2rem' }}>Loading donations...</td>
                 </tr>
               ) : donations.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                     No donation records found matching criteria.
                   </td>
                 </tr>
@@ -203,6 +220,26 @@ export default function AdminDonations() {
 
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {new Date(d.created_at).toLocaleDateString()}
+                    </td>
+
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        {d.payment_status !== 'Completed' && (
+                          <button type="button" className="btn btn-sm btn-navy" onClick={() => setStatus(d.id, 'Completed')}>
+                            Confirm
+                          </button>
+                        )}
+                        {d.payment_status !== 'Failed' && (
+                          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setStatus(d.id, 'Failed')}>
+                            Fail
+                          </button>
+                        )}
+                        {d.payment_status !== 'Pending' && (
+                          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setStatus(d.id, 'Pending')}>
+                            Reopen
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

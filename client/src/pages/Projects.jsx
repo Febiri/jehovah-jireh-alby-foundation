@@ -4,7 +4,7 @@ import ProjectCard from '../components/ProjectCard';
 import { Calendar, CheckCircle2, Clock, Filter, Sparkles } from 'lucide-react';
 
 export default function Projects() {
-  const { projects } = useContent();
+  const { projects, loading } = useContent();
   const [activeFilter, setActiveFilter] = useState('all');
 
   const filteredProjects = projects.filter((p) => {
@@ -65,11 +65,15 @@ export default function Projects() {
           </div>
 
           {/* Projects Grid */}
-          {filteredProjects.length === 0 ? (
+          {loading ? (
+            <div className="skeleton-grid" aria-busy="true" aria-label="Loading projects">
+              {[1, 2, 3].map(i => <div key={i} className="skeleton-card" />)}
+            </div>
+          ) : filteredProjects.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '4rem 1rem', background: 'var(--bg-light)', borderRadius: 'var(--radius-lg)' }}>
               <Sparkles size={36} style={{ color: 'var(--gold-500)', marginBottom: '1rem' }} />
               <h3 style={{ color: 'var(--navy-900)', marginBottom: '0.5rem' }}>No projects found in this category</h3>
-              <p style={{ color: 'var(--text-muted)' }}>The foundation administrator can add or schedule new projects at any time from the dashboard.</p>
+              <p style={{ color: 'var(--text-muted)' }}>Please check back soon or explore another category.</p>
             </div>
           ) : (
             <div className="activities-grid">

@@ -120,8 +120,8 @@ export default function AdminSettings() {
       return;
     }
 
-    if (passwordData.newPassword.length < 8) {
-      setPasswordError('Password must be at least 8 characters.');
+    if (passwordData.newPassword.length < 10) {
+      setPasswordError('Password must be at least 10 characters with upper-case, lower-case and a number.');
       return;
     }
 
@@ -486,33 +486,39 @@ export default function AdminSettings() {
 
         <form onSubmit={handleChangePassword} style={{ maxWidth: '500px' }}>
           <div className="form-group">
-            <label className="form-label">Current Password</label>
+            <label className="form-label" htmlFor="admin-current-password">Current Password</label>
             <input
+              id="admin-current-password"
               type="password"
               className="form-input"
               required
+              autoComplete="current-password"
               value={passwordData.currentPassword}
               onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">New Password (at least 8 characters)</label>
+            <label className="form-label" htmlFor="admin-new-password">New Password (min 10 chars, upper + lower + number)</label>
             <input
+              id="admin-new-password"
               type="password"
               className="form-input"
               required
+              autoComplete="new-password"
               value={passwordData.newPassword}
               onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Confirm New Password</label>
+            <label className="form-label" htmlFor="admin-confirm-password">Confirm New Password</label>
             <input
+              id="admin-confirm-password"
               type="password"
               className="form-input"
               required
+              autoComplete="new-password"
               value={passwordData.confirmPassword}
               onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
             />
@@ -523,6 +529,36 @@ export default function AdminSettings() {
             <span>{passwordLoading ? 'Updating Password...' : 'Update Password'}</span>
           </button>
         </form>
+
+        <div style={{ marginTop: '3rem', padding: '1.5rem', background: 'var(--bg-light)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)', maxWidth: '640px' }}>
+          <h3 className="font-heading" style={{ fontSize: '1.15rem', color: 'var(--navy-900)', marginBottom: '0.5rem' }}>
+            Data &amp; Backups
+          </h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-body)', marginBottom: '1rem' }}>
+            Storage is currently a local JSON file. Download a backup regularly and store it offsite until managed database storage is configured.
+          </p>
+          <a
+            className="btn btn-navy btn-sm"
+            href="/api/admin/export"
+            onClick={(e) => {
+              e.preventDefault();
+              fetch('/api/admin/export', { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json())
+                .then(data => {
+                  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `jjaf-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                })
+                .catch(() => alert('Backup download failed.'));
+            }}
+          >
+            Download JSON backup
+          </a>
+        </div>
       </div>
     </div>
   );

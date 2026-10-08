@@ -18,12 +18,12 @@ export default function Footer() {
             </div>
 
             <div className="footer-brand-motto">
-              “{settings?.motto || 'the lord will provide'}” — <span style={{ color: 'var(--gold-400)' }}>{settings?.scripture || 'Genesis 22:14'}</span>
+              “{settings?.motto || 'The Lord will provide'}” — <span style={{ color: 'var(--gold-400)' }}>{settings?.scripture || 'Genesis 22:14'}</span>
             </div>
 
             <p className="footer-desc">
               {settings?.description ||
-                'Jehovah jireh Alby foundation is a Christian charitable foundation, committed to caring for orphans, street children,vulnerable children and the needy. We believe every child deserves love, hope , education and a future.'}
+                'Jehovah Jireh Alby Foundation is a Christian charitable foundation caring for orphans, street children, vulnerable children and the needy. Every child deserves love, hope, education and a future.'}
             </p>
 
             <Link to="/donate" className="btn btn-sm btn-gold">
@@ -67,8 +67,8 @@ export default function Footer() {
               <Phone size={17} style={{ color: 'var(--gold-500)', marginTop: '3px', flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--gold-400)', fontWeight: 700 }}>Phone / Mobile</div>
-                <a href={`tel:${settings?.phone || '0248072279'}`} style={{ color: '#f1f5f9', fontWeight: 600 }}>
-                  {settings?.phone || '0248072279'}
+                <a href={`tel:+233${String(settings?.phone || '0248072279').replace(/\D/g, '').replace(/^0/, '')}`} style={{ color: '#f1f5f9', fontWeight: 600 }}>
+                  {settings?.phone ? `${settings.phone} (+233 ${String(settings.phone).replace(/\D/g, '').replace(/^0/, '')})` : '0248072279 (+233 248 072 279)'}
                 </a>
               </div>
             </div>
@@ -144,7 +144,14 @@ export default function Footer() {
 
           <div className="footer-bottom-scripture">
             <BookOpen size={16} />
-            <span>“{settings?.motto || 'the lord will provide'}” — {settings?.scripture || 'Genesis 22:14'}</span>
+            <span>“{settings?.motto || 'The Lord will provide'}” — {settings?.scripture || 'Genesis 22:14'}</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Link to="/privacy" style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Privacy</Link>
+            <Link to="/terms" style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Terms</Link>
+            <Link to="/safeguarding" style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Safeguarding</Link>
+            <Link to="/transparency" style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Transparency</Link>
           </div>
 
           <div>

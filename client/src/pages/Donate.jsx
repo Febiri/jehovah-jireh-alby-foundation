@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useContent } from '../context/ContentContext';
-import confetti from 'canvas-confetti';
 import {
   Heart,
   Smartphone,
@@ -8,10 +7,10 @@ import {
   CreditCard,
   CheckCircle2,
   Lock,
-  Sparkles,
-  Info,
   ShieldCheck
 } from 'lucide-react';
+
+const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim());
 
 export default function Donate() {
   const { settings, refreshContent } = useContent();
@@ -44,28 +43,42 @@ export default function Donate() {
   };
 
   const handleCustomChange = (e) => {
-    const val = e.target.value.replace(/[^0-9.]/g, '');
+    // Allow digits with at most one decimal point and 2 decimals
+    let val = e.target.value.replace(/[^0-9.]/g, '');
+    const parts = val.split('.');
+    if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+    if (parts[1] && parts[1].length > 2) val = parts[0] + '.' + parts[1].slice(0, 2);
     setCustomAmount(val);
     setAmount(val);
   };
 
+  const [fieldErrors, setFieldErrors] = useState({});
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+    setFieldErrors({});
 
+    const errors = {};
     const finalAmount = Number(amount);
-    if (!finalAmount || finalAmount <= 0) {
-      setErrorMessage('Please enter a valid donation amount.');
-      return;
+    if (!Number.isFinite(finalAmount) || finalAmount < 1 || finalAmount > 10000000) {
+      errors.amount = 'Please enter an amount between 1 and 10,000,000.';
     }
-
     if (!formData.is_anonymous && !formData.donor_name.trim()) {
-      setErrorMessage('Please provide your name or check the anonymous donation option.');
-      return;
+      errors.donor_name = 'Please provide your name or choose anonymous.';
     }
-
+    if (formData.email.trim() && !isValidEmail(formData.email)) {
+      errors.email = 'Please enter a valid email address.';
+    }
     if (!formData.email.trim() && !formData.phone.trim()) {
-      setErrorMessage('Please provide an email or phone number for receipt confirmation.');
+      errors.contact = 'Please provide an email or phone number for receipt confirmation.';
+    }
+    if (formData.message.length > 2000) {
+      errors.message = 'Message must be under 2000 characters.';
+    }
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      setErrorMessage(errors.amount || errors.donor_name || errors.email || errors.contact || errors.message || 'Please review the highlighted fields.');
       return;
     }
 
@@ -91,17 +104,12 @@ export default function Donate() {
       const data = await res.json();
       if (data.success) {
         setSubmittedDonation(data.data);
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
         refreshContent();
       } else {
         setErrorMessage(data.error || 'Failed to submit donation.');
       }
     } catch (err) {
-      setErrorMessage('Network error while processing donation record.');
+      setErrorMessage('Network error while recording your pledge. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -119,7 +127,7 @@ export default function Donate() {
             Donate to Jehovah Jireh Alby Foundation
           </h1>
           <p style={{ maxWidth: '720px', margin: '0 auto', fontSize: '1.15rem', color: '#cbd5e1', lineHeight: '1.7' }}>
-            “{settings?.motto || 'the lord will provide'}” — {settings?.scripture || 'Genesis 22:14'}. Your partnership provides food, shelter, mattresses, education, and health to orphaned and vulnerable children in Ghana.
+            “{settings?.motto || 'The Lord will provide'}” — {settings?.scripture || 'Genesis 22:14'}. Your partnership provides food, shelter, mattresses, education, and health to orphaned and vulnerable children in Ghana.
           </p>
         </div>
       </section>
@@ -135,11 +143,11 @@ export default function Donate() {
               </div>
 
               <h2 className="font-heading" style={{ fontSize: '2rem', color: 'var(--navy-900)', marginBottom: '0.75rem' }}>
-                Thank You for Sowing into Hope!
+                Pledge Recorded — Pending Confirmation
               </h2>
 
-              <p style={{ fontSize: '1.1rem', color: 'var(--text-body)', lineHeight: '1.7', marginBottom: '2rem' }}>
-                Your generous gift of <strong>{submittedDonation.currency} {submittedDonation.amount.toLocaleString()}</strong> has been recorded. May God abundantly bless and replenish you as you bless vulnerable children.
+              <p style={{ fontSize: '1.1rem', color: 'var(--text-body)', lineHeight: '1.7', marginBottom: '1rem' }}>
+                Thank you! Your pledge of <strong>{submittedDonation.currency} {submittedDonation.amount.toLocaleString()}</strong> has been recorded as <strong>{submittedDonation.payment_status || 'Pending'}</strong>. No money has moved online — please complete the transfer with the instructions below and keep the reference for verification.
               </p>
 
               {/* Receipt Summary Box */}
@@ -157,6 +165,10 @@ export default function Donate() {
                   <span style={{ color: 'var(--navy-900)', fontWeight: 600 }}>{submittedDonation.payment_method}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Status:</span>
+                  <span style={{ color: 'var(--navy-900)', fontWeight: 600 }}>{submittedDonation.payment_status || 'Pending'} — complete transfer, admin confirms</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Frequency:</span>
                   <span style={{ textTransform: 'capitalize', color: 'var(--navy-900)', fontWeight: 600 }}>{submittedDonation.frequency}</span>
                 </div>
@@ -269,41 +281,57 @@ export default function Donate() {
 
                   {/* Custom Amount */}
                   <div className="form-group">
-                    <label className="form-label">Or Custom Amount ({currency}):</label>
+                    <label className="form-label" htmlFor="donate-custom-amount">Or Custom Amount ({currency}):</label>
                     <input
+                      id="donate-custom-amount"
                       type="text"
+                      inputMode="decimal"
                       className="form-input"
                       placeholder={`Enter custom amount in ${currency}`}
                       value={customAmount}
                       onChange={handleCustomChange}
+                      aria-invalid={Boolean(fieldErrors.amount)}
                     />
+                    {fieldErrors.amount && <div className="form-error" role="alert">{fieldErrors.amount}</div>}
                   </div>
 
                   {/* Payment Method Selector */}
-                  <label className="form-label" style={{ marginTop: '1.5rem' }}>Payment Method:</label>
-                  <div className="payment-method-selector">
+                  <span className="form-label" id="payment-method-label" style={{ marginTop: '1.5rem', display: 'block' }}>Payment Method:</span>
+                  <div className="payment-method-selector" role="radiogroup" aria-labelledby="payment-method-label">
                     <div
+                      role="radio"
+                      aria-checked={paymentMethod === 'Mobile Money'}
+                      tabIndex={0}
                       className={`method-choice-card ${paymentMethod === 'Mobile Money' ? 'active' : ''}`}
                       onClick={() => setPaymentMethod('Mobile Money')}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPaymentMethod('Mobile Money'); } }}
                     >
                       <Smartphone size={22} style={{ color: 'var(--gold-600)' }} />
                       <span>Mobile Money</span>
                     </div>
 
                     <div
+                      role="radio"
+                      aria-checked={paymentMethod === 'Bank Transfer'}
+                      tabIndex={0}
                       className={`method-choice-card ${paymentMethod === 'Bank Transfer' ? 'active' : ''}`}
                       onClick={() => setPaymentMethod('Bank Transfer')}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPaymentMethod('Bank Transfer'); } }}
                     >
                       <Landmark size={22} style={{ color: 'var(--navy-700)' }} />
                       <span>Bank Transfer</span>
                     </div>
 
                     <div
+                      role="radio"
+                      aria-checked={paymentMethod === 'Card'}
+                      tabIndex={0}
                       className={`method-choice-card ${paymentMethod === 'Card' ? 'active' : ''}`}
                       onClick={() => setPaymentMethod('Card')}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPaymentMethod('Card'); } }}
                     >
                       <CreditCard size={22} style={{ color: 'var(--navy-700)' }} />
-                      <span>Card / Online</span>
+                      <span>Card / Online (pledge)</span>
                     </div>
                   </div>
 
@@ -325,10 +353,10 @@ export default function Donate() {
                       <div>
                         <div className="method-info-title">
                           <Landmark size={16} style={{ color: 'var(--navy-700)' }} />
-                          <span>Bank Wire / Direct Transfer</span>
+                          <span>Bank Wire / Direct Transfer (manual)</span>
                         </div>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: '1.5' }}>
-                          Account details are securely maintained by foundation administration. Submitting this form generates a certified tracking receipt for your transfer.
+                          This form records a <strong>pledge</strong> and generates a tracking reference. Please transfer via your bank app, then share the receipt with the foundation for confirmation. No funds move on this website.
                         </p>
                       </div>
                     )}
@@ -337,10 +365,10 @@ export default function Donate() {
                       <div>
                         <div className="method-info-title">
                           <Lock size={16} style={{ color: 'var(--gold-600)' }} />
-                          <span>Debit / Credit Card Gateway</span>
+                          <span>Card / Online (pledge — gateway coming soon)</span>
                         </div>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: '1.5' }}>
-                          Structured for direct integration with Paystack / Hubtel / Flutterwave Ghanaian payment providers once the foundation's production API keys are activated.
+                          Online card payment is not yet activated (Paystack / Hubtel / Flutterwave integration pending). Submitting records a <strong>pledge only</strong> — please complete via Mobile Money or Bank Transfer for now.
                         </p>
                       </div>
                     )}
@@ -348,45 +376,59 @@ export default function Donate() {
 
                   {/* Donor Info Fields */}
                   <div className="form-group">
-                    <label className="form-label">Full Name:</label>
+                    <label className="form-label" htmlFor="donate-name">Full Name:</label>
                     <input
+                      id="donate-name"
                       type="text"
                       className="form-input"
                       placeholder="e.g. Samuel Mensah"
                       value={formData.donor_name}
                       disabled={formData.is_anonymous}
                       onChange={(e) => setFormData({ ...formData, donor_name: e.target.value })}
+                      aria-invalid={Boolean(fieldErrors.donor_name)}
                     />
+                    {fieldErrors.donor_name && <div className="form-error" role="alert">{fieldErrors.donor_name}</div>}
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="donate-contact-grid">
                     <div className="form-group">
-                      <label className="form-label">Email Address:</label>
+                      <label className="form-label" htmlFor="donate-email">Email Address:</label>
                       <input
+                        id="donate-email"
                         type="email"
                         className="form-input"
                         placeholder="e.g. samuel@example.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        aria-invalid={Boolean(fieldErrors.email || fieldErrors.contact)}
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Phone Number:</label>
+                      <label className="form-label" htmlFor="donate-phone">Phone Number:</label>
                       <input
+                        id="donate-phone"
                         type="tel"
                         className="form-input"
-                        placeholder="e.g. 0248072279"
+                        placeholder="e.g. +233 24 807 2279"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        aria-invalid={Boolean(fieldErrors.contact)}
                       />
                     </div>
                   </div>
+                  {(fieldErrors.email || fieldErrors.contact) && (
+                    <div className="form-error" role="alert" style={{ marginTop: '-0.5rem', marginBottom: '1rem' }}>
+                      {fieldErrors.email || fieldErrors.contact}
+                    </div>
+                  )}
 
                   <div className="form-group">
-                    <label className="form-label">Optional Prayer or Encouragement Message:</label>
+                    <label className="form-label" htmlFor="donate-message">Optional Prayer or Encouragement Message:</label>
                     <textarea
+                      id="donate-message"
                       className="form-textarea"
                       rows={2}
+                      maxLength={2000}
                       placeholder="Write a message of love or prayer for the children..."
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -423,13 +465,13 @@ export default function Donate() {
               <div>
                 <div style={{ background: 'linear-gradient(135deg, var(--navy-950), var(--navy-900))', color: 'var(--white)', padding: '2.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(212, 175, 55, 0.35)', marginBottom: '2rem' }}>
                   <span className="section-tag" style={{ background: 'rgba(212, 175, 55, 0.15)', color: 'var(--gold-300)' }}>
-                    “{settings?.motto || 'the lord will provide'}”
+                    “{settings?.motto || 'The Lord will provide'}”
                   </span>
                   <h3 className="font-heading" style={{ fontSize: '1.65rem', color: 'var(--white)', margin: '1rem 0' }}>
                     Where Your Donation Goes
                   </h3>
                   <p style={{ color: '#cbd5e1', lineHeight: '1.7', fontSize: '0.975rem', marginBottom: '1.5rem' }}>
-                    100% of community contributions go directly toward tangible resources for vulnerable children:
+                    Community contributions fund tangible resources for vulnerable children. Financial summaries are published in our annual reports as they become available — see Transparency &amp; Reports.
                   </p>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.925rem' }}>

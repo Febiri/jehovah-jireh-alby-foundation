@@ -1,21 +1,29 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, Tag } from 'lucide-react';
 
 export default function Lightbox({ item, onClose }) {
+  const closeRef = useRef(null);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeRef.current?.focus();
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [onClose]);
 
   if (!item) return null;
 
   return (
-    <div className="lightbox-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+    <div className="lightbox-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Image preview: ${item.title || item.caption || 'outreach photo'}`}>
       <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-        <button className="lightbox-close-btn" onClick={onClose} aria-label="Close image preview">
+        <button ref={closeRef} className="lightbox-close-btn" onClick={onClose} aria-label="Close image preview">
           <X size={32} />
         </button>
 

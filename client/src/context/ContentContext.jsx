@@ -4,12 +4,12 @@ const ContentContext = createContext(null);
 
 export const ContentProvider = ({ children }) => {
   const [settings, setSettings] = useState({
-    foundation_name: 'Jehovah jireh Alby foundation',
+    foundation_name: 'Jehovah Jireh Alby Foundation',
     display_title: 'JEHOVAH JIREH ALBY FOUNDATION',
-    description: 'Jehovah jireh Alby foundation is a Christian charitable foundation, committed to caring for orphans, street children,vulnerable children and the needy. We believe every child deserves love, hope , education and a future.',
-    mission: 'to provide food, shelter, education, medical support and spiritual guidance to orphaned and less privileged children in Ghana.',
+    description: 'Jehovah Jireh Alby Foundation is a Christian charitable foundation caring for orphans, street children, vulnerable children and the needy. Every child deserves love, hope, education and a future.',
+    mission: 'To provide food, shelter, education, medical support and spiritual guidance to orphaned and less privileged children in Ghana.',
     vision: 'To see every vulnerable child smile, thrive, and know that God provides.',
-    motto: 'the lord will provide',
+    motto: 'The Lord will provide',
     scripture: 'Genesis 22:14',
     phone: '0248072279',
     email: 'Jehovahjirehalbyfoundation@gmail.com',

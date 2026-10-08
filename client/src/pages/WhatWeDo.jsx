@@ -4,7 +4,7 @@ import { useContent } from '../context/ContentContext';
 import { Home as HomeIcon, Shirt, BookOpen, HeartPulse, Sun, Heart, ArrowRight } from 'lucide-react';
 
 export default function WhatWeDo() {
-  const { whatWeDo, settings } = useContent();
+  const { whatWeDo, settings, loading } = useContent();
 
   const getWhatIcon = (iconName) => {
     switch (iconName) {
@@ -38,14 +38,17 @@ export default function WhatWeDo() {
       <section className="section">
         <div className="container">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3.5rem' }}>
-            {whatWeDo.map((item, index) => {
+            {loading ? (
+              [1, 2].map(i => <div key={i} className="skeleton-card" style={{ height: '340px' }} aria-hidden="true" />)
+            ) : (
+            whatWeDo.map((item, index) => {
               const isEven = index % 2 === 1;
               return (
                 <div
                   key={item.id}
+                  className={`what-card${isEven ? ' reverse' : ''}`}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: isEven ? '1.1fr 0.9fr' : '0.9fr 1.1fr',
                     gap: '3rem',
                     alignItems: 'center',
                     background: 'var(--white)',
@@ -92,7 +95,7 @@ export default function WhatWeDo() {
                   </div>
                 </div>
               );
-            })}
+            }))}
           </div>
 
           {/* Scripture Callout */}
@@ -101,7 +104,7 @@ export default function WhatWeDo() {
               Biblical Foundation
             </span>
             <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1.65rem', color: 'var(--gold-200)', marginTop: '0.75rem', marginBottom: '0.5rem' }}>
-              “{settings?.motto || 'the lord will provide'}”
+              “{settings?.motto || 'The Lord will provide'}”
             </div>
             <div style={{ color: 'var(--gold-400)', fontWeight: 700, fontSize: '0.95rem', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
               {settings?.scripture || 'Genesis 22:14'}

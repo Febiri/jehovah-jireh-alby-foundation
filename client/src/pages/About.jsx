@@ -22,7 +22,7 @@ export default function About() {
             About Jehovah Jireh Alby Foundation
           </h1>
           <div style={{ fontStyle: 'italic', color: 'var(--gold-200)', fontSize: '1.25rem', fontFamily: 'var(--font-serif)' }}>
-            “{settings?.motto || 'the lord will provide'}” — {settings?.scripture || 'Genesis 22:14'}
+            “{settings?.motto || 'The Lord will provide'}” — {settings?.scripture || 'Genesis 22:14'}
           </div>
         </div>
       </section>
@@ -42,7 +42,7 @@ export default function About() {
 
             <p style={{ fontSize: '1.25rem', lineHeight: '1.85', color: 'var(--navy-950)', marginBottom: '2rem' }}>
               “{settings?.description ||
-                'Jehovah jireh Alby foundation is a Christian charitable foundation, committed to caring for orphans, street children,vulnerable children and the needy. We believe every child deserves love, hope , education and a future.'}”
+                'Jehovah Jireh Alby Foundation is a Christian charitable foundation caring for orphans, street children, vulnerable children and the needy. Every child deserves love, hope, education and a future.'}”
             </p>
 
             <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
@@ -51,7 +51,7 @@ export default function About() {
                 <span>Scriptural Anchor: {settings?.scripture || 'Genesis 22:14'}</span>
               </div>
               <div style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>
-                Motto: “{settings?.motto || 'the lord will provide'}”
+                Motto: “{settings?.motto || 'The Lord will provide'}”
               </div>
             </div>
           </div>

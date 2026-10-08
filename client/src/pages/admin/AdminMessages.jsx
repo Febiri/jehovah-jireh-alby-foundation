@@ -10,13 +10,13 @@ export default function AdminMessages() {
 
   const fetchMessages = () => {
     setLoading(true);
-    fetch('/api/messages', {
+    fetch('/api/messages?limit=100', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          setMessages(data.data);
+          setMessages(Array.isArray(data.data) ? data.data : []);
         }
       })
       .catch(err => console.error(err))

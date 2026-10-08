@@ -14,35 +14,58 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 
 const getInitialData = () => {
-  const salt = bcrypt.genSaltSync(10);
-  const adminPasswordHash = bcrypt.hashSync('Admin2026Secure!', salt);
+  // Bootstrap credentials come from the environment — never hardcode real
+  // passwords in source. Each admin gets a unique salt/hash.
+  const primaryEmail = process.env.ADMIN_EMAIL || 'admin@jjafoundation.org';
+  const primaryPassword = process.env.ADMIN_PASSWORD || null;
+  const execEmail = process.env.FOUNDATION_EMAIL || 'Jehovahjirehalbyfoundation@gmail.com';
+  const execPassword = process.env.FOUNDATION_PASSWORD || null;
+
+  const hashPassword = (plain) => {
+    if (!plain) {
+      // Random unusable secret forces a reset via env on first boot.
+      plain = require('crypto').randomBytes(32).toString('hex');
+    }
+    return bcrypt.hashSync(plain, 12);
+  };
+
+  const now = new Date().toISOString();
+  const needsSetup = !primaryPassword || !execPassword;
 
   return {
     admin_users: [
       {
         id: 1,
         name: 'Foundation Administrator',
-        email: 'admin@jjafoundation.org',
-        password_hash: adminPasswordHash,
+        email: primaryEmail,
+        password_hash: hashPassword(primaryPassword),
         role: 'superadmin',
-        created_at: new Date().toISOString()
+        must_change_password: needsSetup,
+        token_version: 0,
+        failed_attempts: 0,
+        locked_until: null,
+        created_at: now
       },
       {
         id: 2,
         name: 'Alby Executive',
-        email: 'Jehovahjirehalbyfoundation@gmail.com',
-        password_hash: adminPasswordHash,
+        email: execEmail,
+        password_hash: hashPassword(execPassword),
         role: 'admin',
-        created_at: new Date().toISOString()
+        must_change_password: needsSetup,
+        token_version: 0,
+        failed_attempts: 0,
+        locked_until: null,
+        created_at: now
       }
     ],
     settings: {
-      foundation_name: 'Jehovah jireh Alby foundation',
+      foundation_name: 'Jehovah Jireh Alby Foundation',
       display_title: 'JEHOVAH JIREH ALBY FOUNDATION',
-      description: 'Jehovah jireh Alby foundation is a Christian charitable foundation, committed to caring for orphans, street children,vulnerable children and the needy. We believe every child deserves love, hope , education and a future.',
-      mission: 'to provide food, shelter, education, medical support and spiritual guidance to orphaned and less privileged children in Ghana.',
+      description: 'Jehovah Jireh Alby Foundation is a Christian charitable foundation caring for orphans, street children, vulnerable children and the needy. Every child deserves love, hope, education and a future.',
+      mission: 'To provide food, shelter, education, medical support and spiritual guidance to orphaned and less privileged children in Ghana.',
       vision: 'To see every vulnerable child smile, thrive, and know that God provides.',
-      motto: 'the lord will provide',
+      motto: 'The Lord will provide',
       scripture: 'Genesis 22:14',
       phone: '0248072279',
       email: 'Jehovahjirehalbyfoundation@gmail.com',
@@ -307,10 +330,25 @@ class Database {
       try {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
         this.data = JSON.parse(raw);
+        // Migrate older DBs: ensure auth-hardening fields exist.
+        let migrated = false;
+        for (const u of this.data.admin_users || []) {
+          if (u.token_version === undefined) { u.token_version = 0; migrated = true; }
+          if (u.failed_attempts === undefined) { u.failed_attempts = 0; migrated = true; }
+          if (u.locked_until === undefined) { u.locked_until = null; migrated = true; }
+          if (u.must_change_password === undefined) { u.must_change_password = false; migrated = true; }
+        }
+        if (migrated) this.save();
       } catch (err) {
-        console.error('Error reading database file, re-initializing:', err);
-        this.data = getInitialData();
-        this.save();
+        // Never silently overwrite a corrupt DB — quarantine it for recovery.
+        try {
+          const backup = `${DB_FILE}.corrupt.${Date.now()}.bak`;
+          fs.copyFileSync(DB_FILE, backup);
+          console.error(`Corrupt database quarantined to ${backup}. Refusing to auto-reinitialize.`, err);
+        } catch (e) {
+          console.error('Failed to quarantine corrupt database file:', e);
+        }
+        throw new Error('Database file is corrupt. Restore from backup — see server/data/*.bak.');
       }
     }
   }
@@ -319,10 +357,19 @@ class Database {
     try {
       const tmpFile = `${DB_FILE}.tmp`;
       fs.writeFileSync(tmpFile, JSON.stringify(this.data, null, 2), 'utf8');
+      try {
+        const fd = fs.openSync(tmpFile, 'r');
+        fs.fsyncSync(fd);
+        fs.closeSync(fd);
+      } catch (e) { /* best-effort durability */ }
       fs.renameSync(tmpFile, DB_FILE);
     } catch (err) {
       console.error('Database write error:', err);
     }
+  }
+
+  exportSnapshot() {
+    return JSON.parse(JSON.stringify(this.data));
   }
 
   // Helper to dynamically calculate project status based on date
@@ -389,9 +436,17 @@ class Database {
     const index = this.data.projects.findIndex(p => p.id === Number(id));
     if (index === -1) return null;
     const existing = this.data.projects[index];
+    const allowed = {};
+    for (const k of ['title', 'description', 'date', 'time', 'location', 'image', 'status_mode']) {
+      if (updateData[k] !== undefined) allowed[k] = String(updateData[k]).slice(0, 5000);
+    }
+    if (updateData.featured !== undefined) allowed.featured = Boolean(updateData.featured);
+    if (Array.isArray(updateData.additional_images)) {
+      allowed.additional_images = updateData.additional_images.filter(u => typeof u === 'string').slice(0, 20).map(u => u.slice(0, 500));
+    }
     const updated = {
       ...existing,
-      ...updateData,
+      ...allowed,
       id: existing.id,
       updated_at: new Date().toISOString()
     };
@@ -436,7 +491,12 @@ class Database {
     const index = this.data.gallery.findIndex(g => g.id === Number(id));
     if (index === -1) return null;
     const existing = this.data.gallery[index];
-    this.data.gallery[index] = { ...existing, ...updateData, id: existing.id };
+    const allowed = {};
+    for (const k of ['title', 'caption', 'category', 'image']) {
+      if (updateData[k] !== undefined) allowed[k] = String(updateData[k]).slice(0, 2000);
+    }
+    if (updateData.featured !== undefined) allowed.featured = Boolean(updateData.featured);
+    this.data.gallery[index] = { ...existing, ...allowed, id: existing.id };
     this.logActivity('Gallery Item Updated', `Updated photo id #${id}`);
     this.save();
     return this.data.gallery[index];
@@ -458,16 +518,16 @@ class Database {
     const ref = donationData.transaction_ref || `JJAF-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const newDonation = {
       id: nextId,
-      donor_name: donationData.is_anonymous ? 'Anonymous Supporter' : (donationData.donor_name || 'Supporter'),
-      email: donationData.email || '',
-      phone: donationData.phone || '',
+      donor_name: donationData.is_anonymous ? 'Anonymous Supporter' : String(donationData.donor_name || 'Supporter').slice(0, 200),
+      email: String(donationData.email || '').slice(0, 320),
+      phone: String(donationData.phone || '').slice(0, 40),
       amount: Number(donationData.amount) || 0,
-      currency: donationData.currency || 'GHS',
-      frequency: donationData.frequency || 'one-time',
-      payment_method: donationData.payment_method || 'Mobile Money',
-      payment_status: donationData.payment_status || 'Completed',
-      transaction_ref: ref,
-      message: donationData.message || '',
+      currency: donationData.currency === 'USD' ? 'USD' : 'GHS',
+      frequency: donationData.frequency === 'monthly' ? 'monthly' : 'one-time',
+      payment_method: ['Mobile Money', 'Bank Transfer', 'Card'].includes(donationData.payment_method) ? donationData.payment_method : 'Mobile Money',
+      payment_status: ['Pending', 'Completed', 'Failed'].includes(donationData.payment_status) ? donationData.payment_status : 'Pending',
+      transaction_ref: String(ref).slice(0, 100),
+      message: String(donationData.message || '').slice(0, 2000),
       is_anonymous: Boolean(donationData.is_anonymous),
       created_at: new Date().toISOString()
     };
@@ -500,6 +560,8 @@ class Database {
   }
 
   updateMessageStatus(id, status) {
+    const allowed = ['unread', 'read', 'archived'];
+    if (!allowed.includes(status)) return null;
     const msg = this.data.messages.find(m => m.id === Number(id));
     if (msg) {
       msg.status = status;
@@ -510,7 +572,9 @@ class Database {
   }
 
   deleteMessage(id) {
+    const found = (this.data.messages || []).some(m => m.id === Number(id));
     this.data.messages = this.data.messages.filter(m => m.id !== Number(id));
+    if (found) this.logActivity('Message Deleted', `Deleted contact message id #${id}`, true);
     this.save();
     return true;
   }
@@ -520,9 +584,20 @@ class Database {
   }
 
   updateSettings(newSettings) {
+    const allowedKeys = ['foundation_name', 'display_title', 'description', 'mission', 'vision', 'motto', 'scripture', 'phone', 'email', 'tiktok', 'instagram', 'snapchat', 'momo_network', 'momo_number', 'momo_account_name', 'momo_instructions', 'bank_name', 'bank_account_name', 'bank_account_number', 'bank_branch', 'bank_instructions', 'custom_logo_url', 'seo_meta_title', 'seo_meta_description', 'stats_public_visible', 'stat_children_supported', 'stat_orphanages_supported', 'stat_projects_completed', 'stat_donations_received'];
+    const allowed = {};
+    for (const k of allowedKeys) {
+      if (newSettings[k] !== undefined) {
+        if (k.startsWith('stat_') || k === 'stats_public_visible') {
+          allowed[k] = k === 'stats_public_visible' ? Boolean(newSettings[k]) : Math.max(0, Math.min(10000000, Number(newSettings[k]) || 0));
+        } else {
+          allowed[k] = String(newSettings[k]).slice(0, 5000);
+        }
+      }
+    }
     this.data.settings = {
       ...this.data.settings,
-      ...newSettings,
+      ...allowed,
       updated_at: new Date().toISOString()
     };
     this.logActivity('Settings Updated', 'Foundation website settings and content updated');
@@ -535,39 +610,93 @@ class Database {
   }
 
   updateWhatWeDo(items) {
-    this.data.what_we_do = items;
+    if (!Array.isArray(items) || items.length > 20) return null;
+    const clean = items.map((it, i) => ({
+      id: Number(it.id) || i + 1,
+      title: String(it.title || '').slice(0, 200),
+      subtitle: String(it.subtitle || '').slice(0, 200),
+      description: String(it.description || '').slice(0, 2000),
+      icon: String(it.icon || 'Heart').slice(0, 50),
+      image: String(it.image || '').slice(0, 500)
+    }));
+    this.data.what_we_do = clean;
+    this.logActivity('Activities Updated', 'What-we-do programs updated');
     this.save();
     return this.data.what_we_do;
+  }
+
+  confirmDonation(id, status) {
+    const allowed = ['Pending', 'Completed', 'Failed'];
+    if (!allowed.includes(status)) return null;
+    const d = (this.data.donations || []).find(x => x.id === Number(id));
+    if (!d) return null;
+    d.payment_status = status;
+    this.logActivity('Donation Updated', `Donation #${id} marked ${status}`);
+    this.save();
+    return d;
   }
 
   getActivityLogs() {
     return (this.data.activity_logs || []).slice(0, 50);
   }
 
-  logActivity(action, details) {
+  logActivity(action, details, persist = false) {
     if (!this.data.activity_logs) this.data.activity_logs = [];
     const nextId = (this.data.activity_logs.reduce((max, l) => Math.max(max, l.id || 0), 0) || 0) + 1;
     this.data.activity_logs.unshift({
       id: nextId,
-      action,
-      details,
+      action: String(action).slice(0, 200),
+      details: String(details || '').slice(0, 1000),
       timestamp: new Date().toISOString()
     });
     if (this.data.activity_logs.length > 100) {
       this.data.activity_logs = this.data.activity_logs.slice(0, 100);
     }
+    if (persist) {
+      try { this.save(); } catch (e) { /* ignore */ }
+    }
   }
 
   findAdminByEmail(email) {
     return (this.data.admin_users || []).find(
-      u => u.email.toLowerCase() === (email || '').toLowerCase()
+      u => String(u.email || '').toLowerCase() === String(email || '').toLowerCase()
     );
+  }
+
+  findAdminById(id) {
+    return (this.data.admin_users || []).find(u => u.id === Number(id));
+  }
+
+  recordFailedLogin(user) {
+    user.failed_attempts = (user.failed_attempts || 0) + 1;
+    if (user.failed_attempts >= 5) {
+      user.locked_until = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    }
+    this.save();
+  }
+
+  resetLoginAttempts(user) {
+    user.failed_attempts = 0;
+    user.locked_until = null;
+    this.save();
+  }
+
+  isLocked(user) {
+    if (!user.locked_until) return false;
+    if (new Date(user.locked_until).getTime() > Date.now()) return true;
+    user.locked_until = null;
+    user.failed_attempts = 0;
+    return false;
   }
 
   updateAdminPassword(adminId, newHashedPassword) {
     const user = (this.data.admin_users || []).find(u => u.id === Number(adminId));
     if (user) {
       user.password_hash = newHashedPassword;
+      user.must_change_password = false;
+      user.token_version = (user.token_version || 0) + 1;
+      user.failed_attempts = 0;
+      user.locked_until = null;
       this.save();
       return true;
     }

@@ -4,7 +4,7 @@ import Lightbox from '../components/Lightbox';
 import { Tag, Sparkles } from 'lucide-react';
 
 export default function Gallery() {
-  const { gallery } = useContent();
+  const { gallery, loading } = useContent();
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeLightboxItem, setActiveLightboxItem] = useState(null);
 
@@ -50,11 +50,15 @@ export default function Gallery() {
           </div>
 
           {/* Grid Layout */}
-          {filteredItems.length === 0 ? (
+          {loading ? (
+            <div className="skeleton-grid" aria-busy="true" aria-label="Loading gallery">
+              {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="skeleton-card" />)}
+            </div>
+          ) : filteredItems.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '4rem 1rem', background: 'var(--bg-light)', borderRadius: 'var(--radius-lg)' }}>
               <Sparkles size={36} style={{ color: 'var(--gold-500)', marginBottom: '1rem' }} />
               <h3 style={{ color: 'var(--navy-900)', marginBottom: '0.5rem' }}>No photos in this album yet</h3>
-              <p style={{ color: 'var(--text-muted)' }}>Images uploaded in the admin CMS will appear here dynamically.</p>
+              <p style={{ color: 'var(--text-muted)' }}>Please check back soon — new outreach photos are added regularly.</p>
             </div>
           ) : (
             <div className="gallery-grid">
@@ -65,7 +69,8 @@ export default function Gallery() {
                   onClick={() => setActiveLightboxItem(item)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && setActiveLightboxItem(item)}
+                  aria-label={`Open photo: ${item.title || item.caption || 'outreach photo'}`}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveLightboxItem(item); } }}
                 >
                   <img src={item.image} alt={item.title || item.caption} loading="lazy" />
                   <div className="gallery-card-overlay">

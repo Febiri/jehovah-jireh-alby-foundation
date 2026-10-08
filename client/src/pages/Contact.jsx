@@ -22,8 +22,16 @@ export default function Contact() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
-      setErrorMessage('Please fill in your name, email, and message.');
+    if (!formData.name.trim() || !formData.message.trim()) {
+      setErrorMessage('Please fill in your name and message.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(formData.email.trim())) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+    if (formData.message.length > 5000) {
+      setErrorMessage('Message must be under 5000 characters.');
       return;
     }
 
@@ -71,7 +79,7 @@ export default function Contact() {
       {/* Main Grid */}
       <section className="section">
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: '3.5rem', alignItems: 'start' }}>
+          <div className="contact-page-grid">
             {/* Contact Details & Social Media */}
             <div>
               <div style={{ background: 'var(--white)', padding: '2.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-md)', marginBottom: '2rem' }}>
@@ -86,9 +94,10 @@ export default function Contact() {
                   </div>
                   <div>
                     <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>Telephone &amp; Mobile Money</div>
-                    <a href={`tel:${settings?.phone || '0248072279'}`} style={{ fontSize: '1.15rem', color: 'var(--navy-900)', fontWeight: 700 }}>
-                      {settings?.phone || '0248072279'}
+                    <a href={`tel:+233${String(settings?.phone || '0248072279').replace(/\D/g, '').replace(/^0/, '')}`} style={{ fontSize: '1.15rem', color: 'var(--navy-900)', fontWeight: 700 }}>
+                      {settings?.phone || '0248072279'} <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>(+233 {String(settings?.phone || '0248072279').replace(/\D/g, '').replace(/^0/, '')})</span>
                     </a>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mon–Sat, 8am–6pm GMT · Santasi Apire, Kumasi</div>
                   </div>
                 </div>
 
@@ -180,36 +189,42 @@ export default function Contact() {
 
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label className="form-label">Full Name *</label>
+                  <label className="form-label" htmlFor="contact-name">Full Name *</label>
                   <input
+                    id="contact-name"
                     type="text"
                     className="form-input"
                     placeholder="e.g. Priscilla Darko"
                     required
+                    maxLength={200}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="donate-contact-grid">
                   <div className="form-group">
-                    <label className="form-label">Email Address *</label>
+                    <label className="form-label" htmlFor="contact-email">Email Address *</label>
                     <input
+                      id="contact-email"
                       type="email"
                       className="form-input"
                       placeholder="e.g. priscilla@example.com"
                       required
+                      maxLength={320}
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Phone Number</label>
+                    <label className="form-label" htmlFor="contact-phone">Phone Number</label>
                     <input
+                      id="contact-phone"
                       type="tel"
                       className="form-input"
-                      placeholder="e.g. 0248072279"
+                      placeholder="e.g. +233 24 807 2279"
+                      maxLength={40}
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     />
@@ -217,23 +232,27 @@ export default function Contact() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Subject</label>
+                  <label className="form-label" htmlFor="contact-subject">Subject</label>
                   <input
+                    id="contact-subject"
                     type="text"
                     className="form-input"
                     placeholder="e.g. Orphanage donation, volunteer inquiry, prayer request"
+                    maxLength={200}
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Message *</label>
+                  <label className="form-label" htmlFor="contact-message">Message *</label>
                   <textarea
+                    id="contact-message"
                     className="form-textarea"
                     rows={5}
                     placeholder="How would you like to connect with Jehovah Jireh Alby Foundation?"
                     required
+                    maxLength={5000}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   />
